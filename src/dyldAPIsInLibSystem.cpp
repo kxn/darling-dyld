@@ -1422,6 +1422,35 @@ const void* address)
 	return p(address);
 }
 
+#if defined(DARLING) && TARGET_OS_OSX
+const struct mach_header* _dyld_get_dlopen_image_header(void* handle)
+{
+    // Darling uses the dyld2 ImageLoader/NSModule interface. A different loader
+    // backend must supply its own handle decoder rather than reinterpret it.
+    if ( gUseDyld3 )
+        return NULL;
+
+    DYLD_LOCK_THIS_BLOCK;
+    if ( handle == RTLD_SELF )
+        return _dyld_get_image_header_containing_address(__builtin_return_address(0));
+    if ( handle == RTLD_MAIN_ONLY ) {
+        typedef const struct mach_header* (*funcType)(void);
+        static funcType p = NULL;
+        if ( p == NULL )
+            dyld_func_lookup_and_resign("__dyld_get_prog_image_header", &p);
+        return p ? p() : NULL;
+    }
+
+    // dlopen's low mode bits are defined by this same source version. The
+    // existing NSModule API asks the actual loader registry to validate the
+    // object before any C++ call. Keep its lock held through the header query.
+    ImageLoader* image = reinterpret_cast<ImageLoader*>(reinterpret_cast<uintptr_t>(handle) & ~uintptr_t(3));
+    if ( NSNameOfModule(reinterpret_cast<NSModule>(image)) == NULL )
+        return NULL;
+    return image->machHeader();
+}
+#endif
+
 bool _dyld_launched_prebound(void)
 {
 	DYLD_LOCK_THIS_BLOCK;

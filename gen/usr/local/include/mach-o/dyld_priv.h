@@ -45,6 +45,11 @@ extern void _dyld_atfork_prepare(void);
 extern void _dyld_atfork_parent(void);
 extern void _dyld_fork_child(void);
 
+#ifdef DARLING
+// Borrowed header for a registered dlopen image; no reference is acquired.
+extern const struct mach_header* _dyld_get_dlopen_image_header(void* handle);
+#endif
+
 
 
 typedef void (*_dyld_objc_notify_mapped)(unsigned count, const char* const paths[], const struct mach_header* const mh[]);

@@ -30,6 +30,7 @@ set(DYLIB_INSTALL_NAME "/usr/lib/system/libdyld.dylib")
 add_circular(system_dyld FAT
 	SOURCES
 	src/dyldAPIsInLibSystem.cpp
+	src/runnable_archs.c
 	src/dyld_stub_binder.S
 	src/dyldLibSystemGlue.c
 	src/threadLocalHelpers.S
