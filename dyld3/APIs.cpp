@@ -54,7 +54,7 @@
 #include "ClosureBuilder.h"
 #include "ClosureFileSystemPhysical.h"
 
-#include <dyld/VersionMap.h>
+#include "DarlingVersionMap.h"
 
 #if __has_feature(ptrauth_calls)
 #include <ptrauth.h>
@@ -371,8 +371,9 @@ bool dyld_is_simulator_platform(dyld_platform_t platform) {
 static
 dyld_build_version_t mapFromVersionSet(dyld_build_version_t version) {
     if (version.platform != 0xffffffff) return version;
-    auto i = std::lower_bound(sVersionMap.begin(), sVersionMap.end(), version.version);
-    assert(i != sVersionMap.end());
+    auto i = std::lower_bound(sDarlingVersionMap.begin(), sDarlingVersionMap.end(), version.version);
+    // Newer Apple dyld returns no matching platform for an unknown future set.
+    if (i == sDarlingVersionMap.end()) return { .platform = 0, .version = 0 };
     switch(dyld3::dyld_get_base_platform(::dyld_get_active_platform())) {
         case PLATFORM_MACOS: return { .platform = PLATFORM_MACOS, .version = i->macos };
         case PLATFORM_IOS: return { .platform = PLATFORM_IOS, .version = i->ios };
@@ -564,7 +565,7 @@ private:
         uint32_t candidateVersion = 0;
         uint32_t candidateVersionEquivalent = 0;
         uint32_t newVersionSetVersion = 0;
-        for (const auto& i : sVersionMap) {
+        for (const auto& i : sDarlingVersionMap) {
             switch (dyld_get_base_platform(::dyld_get_active_platform())) {
                 case PLATFORM_MACOS:    newVersionSetVersion = i.macos; break;
                 case PLATFORM_IOS:      newVersionSetVersion = i.ios; break;
